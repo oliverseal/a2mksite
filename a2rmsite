@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+
+#removes site from /etc/sites-available
+#update hosts file
+import getopt, sys, re
+from os import path
+import os
+import platform
+
+#different paths for differen OS's
+OS = platform.system()
+
+if OS == 'Windows':
+    try:
+        from win32com.shell import shellcon, shell            
+        homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
+    except ImportError: # quick semi-nasty fallback for non-windows/win32com case
+        homedir = os.path.expanduser("~")
+
+    APACHE_TEMPLATE_PATH = homedir + '\\apache-templates'
+    APACHE_SITES_AVAILABLE_PATH = ''
+    HOSTS_FILE_PATH = '\\Windows\\System32\\drivers\\etc\\hosts'
+else:
+    APACHE_TEMPLATE_PATH = '/usr/local/share/apache-templates'
+    APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
+    HOSTS_FILE_PATH = '/etc/hosts'
+
+verbose = False
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hv', ['help', 'verbose'])
+    except getopt.GetoptError, err:
+        # print help information and exit:
+        print str(err) # will print something like 'option -a not recognized'
+        usage()
+        sys.exit(2)
+    output = None
+    verbose = False
+    for o, a in opts:
+        if o == '-v':
+            verbose = True
+            #print('Verbose ON')
+        else:
+            print('Unknown option %s' % o)
+            args.remove(o)
+            usage()
+            sys.exit()
+
+    #gotta have at least 1 arg
+    if len(args) > 1:
+        usage()
+        sys.exit(2)
+
+    #read templates
+    hostname = args[0]
+    if verbose: print('Hostname: %s' % hostname)
+
+    vhost_file_path = '%s/%s.conf' % (APACHE_SITES_AVAILABLE_PATH, hostname)
+
+    try:
+        os.remove(vhost_file_path)
+    except Exception, err:
+        print('Error removing %s. %s' % (vhost_file_path, err))
+
+    #vhost is in, now lets write the hosts
+    remove_host(hostname)
+
+    if verbose: print('Host %s removed successfully.' % (hostname))
+
+
+def remove_host(hostname):
+    """
+    Uses the constant ``HOSTS_FILE_PATH`` to find the ``hosts`` file for this system. Removes the ``hostname`` if found after the "managed" line.
+
+    This looks for ``# Managed by a2mksite`` within the hosts file and only manages entries below it.
+    """
+    #open connection
+    HOST_LINE = '# Managed by a2mksite'
+    try:
+        fh = open(HOSTS_FILE_PATH, 'r')
+        lines = fh.readlines()
+        fh.close()
+        #look for '# Managed by a2mksite' line
+        line_found = False
+        host_found = False
+        found_line = ''
+        for host_line in lines:
+            if line_found is False and host_line.startswith(HOST_LINE):
+                line_found = True
+
+            if line_found and host_line.startswith(hostname):
+                #if an entry for host exists, then re-write the file without it
+                fh = open(HOSTS_FILE_PATH, 'w')
+                for line in lines:
+                    if line != host_line:
+                        fh.write(line)
+                fh.close()
+                return
+
+    except IOError, err:
+        print('Error writing hosts file in "%s". %s' % (HOSTS_FILE_PATH, err))
+        sys.exit(500)
+
+
+
+def usage():
+    print('Usage: a2rmsite [-v] hostname')
+
+if __name__ == '__main__':
+    main()
