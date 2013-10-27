@@ -3,11 +3,12 @@
 #add site to /etc/sites-available
 #update hosts
 import getopt, sys, re
-from os import path, makedirs
+from os import path, makedirs, system
 
 APACHE_TEMPLATE_PATH = '/usr/share/a2mksite/apache-templates'
 APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
 HOSTS_FILE_PATH = '/etc/hosts'
+WEB_BASE = '/var/www/sites/'
 
 verbose = False
 
@@ -32,7 +33,7 @@ def main():
             sys.exit()
 
     #gotta have at least 2 args
-    if len(args) < 2 or len(args) > 3:
+    if len(args) < 1 or len(args) > 3:
         usage()
         sys.exit()
 
@@ -40,7 +41,11 @@ def main():
     hostname = args[0]
     if verbose: print('Hostname: %s' % hostname)
 
-    vhost_path = path.abspath(args[1])
+    if len(args) == 2:
+        vhost_path = path.abspath(args[1])
+    else:
+        vhost_path = WEB_BASE + args[0]
+
     if verbose: print('Path: %s' % vhost_path)
 
     if len(args) == 3:
@@ -80,7 +85,13 @@ def main():
     if vhost_successful:
         append_host(hostname)
 
-    if verbose: print('Host %s added successfully. Now ready for `a2ensite %s.conf` to enable.' % (hostname, hostname))
+    if verbose: print('Host %s added successfully.' % hostname)
+    system('a2ensite %s.conf' % hostname)
+
+    if(path.isfile('/etc/init.d/apache2'):
+        system('/etc/init.d/apache2 reload')
+    elif(path.isfile('/etc/init.d/httpd')):
+        system('/etc/init.d/httpd reload')
 
 
 def write_vhost(template_file_path, vhost_file_path, hostname, vhost_path, index='index.html'):
