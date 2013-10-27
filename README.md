@@ -17,6 +17,8 @@ Installation
 ```
 cd /usr/share
 git clone https://github.com/andyhu/a2mksite.git
+ln -s /usr/share/a2mksite/a2mksite /usr/bin/a2mksite
+ln -s /usr/share/a2rmsite/a2mksite /usr/bin/a2rmsite
 ```
 
 Usage
