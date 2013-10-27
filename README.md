@@ -12,10 +12,22 @@ These scripts:
 - are generally useless unless combined with the `a2ensite` and `a2dissite` scripts.
 - are written in python rather than bash (the common convention) due to file manipulation
 
-Windows
+Installation
 -------
+```
+cd /usr/share
+git clone https://github.com/andyhu/a2mksite.git
+```
 
-There is a very minimal support for Windows in this script. I've built them with the intention of 
-creating `a2ensite` and `a2dissite` python scripts to run in windows and be used in tandem with 
-something like XAMPP. That has not been done yet.
- 
+Usage
+-------
+a2ensite:
+```
+a2mksite site-name.dev /site/dir
+a2ensite site-name.dev.conf
+/etc/init.d/apache2 reload
+```
+a2rmsite:
+```
+a2rmsite site-name.dev
+```
