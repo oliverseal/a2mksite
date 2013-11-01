@@ -3,6 +3,10 @@ a2mksite (and a2rmsite)
 
 A quick couple of scripts that are meant to be used in conjunction with a2ensite and a2dissite that comes with apache2.
 
+Credits
+-------
+Many thanks to [@andyhu](https://github.com/andyhu), who did some awesome work cleaning these scripts up to make them _actually_ work!
+
 Important
 ---------
 These scripts:
