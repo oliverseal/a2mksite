@@ -5,25 +5,10 @@
 import getopt, sys, re
 from os import path
 import os
-import platform
 
-#different paths for differen OS's
-OS = platform.system()
-
-if OS == 'Windows':
-    try:
-        from win32com.shell import shellcon, shell            
-        homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
-    except ImportError: # quick semi-nasty fallback for non-windows/win32com case
-        homedir = os.path.expanduser("~")
-
-    APACHE_TEMPLATE_PATH = homedir + '\\apache-templates'
-    APACHE_SITES_AVAILABLE_PATH = ''
-    HOSTS_FILE_PATH = '\\Windows\\System32\\drivers\\etc\\hosts'
-else:
-    APACHE_TEMPLATE_PATH = '/usr/local/share/apache-templates'
-    APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
-    HOSTS_FILE_PATH = '/etc/hosts'
+APACHE_TEMPLATE_PATH = '/usr/local/share/apache-templates'
+APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
+HOSTS_FILE_PATH = '/etc/hosts'
 
 verbose = False
 
@@ -89,7 +74,7 @@ def remove_host(hostname):
             if line_found is False and host_line.startswith(HOST_LINE):
                 line_found = True
 
-            if line_found and host_line.startswith(hostname):
+            if line_found and host_line.endswith(hostname):
                 #if an entry for host exists, then re-write the file without it
                 fh = open(HOSTS_FILE_PATH, 'w')
                 for line in lines:

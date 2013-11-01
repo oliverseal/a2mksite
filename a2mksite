@@ -3,26 +3,12 @@
 #add site to /etc/sites-available
 #update hosts
 import getopt, sys, re
-from os import path
-import platform
+from os import path, makedirs, system
 
-#different paths for differen OS's
-OS = platform.system()
-
-if OS == 'Windows':
-    try:
-        from win32com.shell import shellcon, shell            
-        homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
-    except ImportError: # quick semi-nasty fallback for non-windows/win32com case
-        homedir = os.path.expanduser("~")
-
-    APACHE_TEMPLATE_PATH = homedir + '\\apache-templates'
-    APACHE_SITES_AVAILABLE_PATH = ''
-    HOSTS_FILE_PATH = '\\Windows\\System32\\drivers\\etc\\hosts'
-else:
-    APACHE_TEMPLATE_PATH = '/usr/local/share/apache-templates'
-    APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
-    HOSTS_FILE_PATH = '/etc/hosts'
+APACHE_TEMPLATE_PATH = '/usr/share/a2mksite/apache-templates'
+APACHE_SITES_AVAILABLE_PATH = '/etc/apache2/sites-available'
+HOSTS_FILE_PATH = '/etc/hosts'
+WEB_BASE = '/var/www/sites/'
 
 verbose = False
 
@@ -47,7 +33,7 @@ def main():
             sys.exit()
 
     #gotta have at least 2 args
-    if len(args) < 2 or len(args) > 3:
+    if len(args) < 1 or len(args) > 3:
         usage()
         sys.exit()
 
@@ -55,15 +41,40 @@ def main():
     hostname = args[0]
     if verbose: print('Hostname: %s' % hostname)
 
-    vhost_path = path.abspath(args[1])
+    if len(args) == 2:
+        vhost_path = path.abspath(args[1])
+    else:
+        vhost_path = WEB_BASE + args[0]
+
     if verbose: print('Path: %s' % vhost_path)
 
     if len(args) == 3:
         index = args[2]
     else:
-        index = 'index.html'
+        index = 'index.html index.php'
 
     if verbose: print('Index: %s' % index)
+
+    if verbose: print('Creating directories...')
+    
+    try:
+        directory = vhost_path + '/public'
+        makedirs(directory)
+        if verbose:
+            print('Directory %s has been successfully created' % directory)
+    except IOError, err:
+        print('Error creating directory "%s". %s' % (directory, err))
+        sys.exit(500)
+
+    try:
+        directory = vhost_path + '/log'
+        makedirs(directory)
+        if verbose:
+            print('Directory %s has been successfully created' % directory)
+    except IOError, err:
+        print('Error creating directory "%s". %s' % (directory, err))
+        sys.exit(500)
+
 
     template_file_path = APACHE_TEMPLATE_PATH + '/vhost-template.conf'
     vhost_file_path = '%s/%s.conf' % (APACHE_SITES_AVAILABLE_PATH, hostname)
@@ -74,7 +85,13 @@ def main():
     if vhost_successful:
         append_host(hostname)
 
-    if verbose: print('Host %s added successfully. Now ready for `a2ensite %s.conf` to enable.' % (hostname, hostname))
+    if verbose: print('Host %s added successfully.' % hostname)
+    system('a2ensite %s.conf' % hostname)
+
+    if(path.isfile('/etc/init.d/apache2'):
+        system('/etc/init.d/apache2 reload')
+    elif(path.isfile('/etc/init.d/httpd')):
+        system('/etc/init.d/httpd reload')
 
 
 def write_vhost(template_file_path, vhost_file_path, hostname, vhost_path, index='index.html'):
@@ -142,7 +159,7 @@ def append_host(hostname):
             #read contents in after it
             host_found = False
             while host_line != '':
-                if host_line.startswith(hostname):
+                if host_line.endswith(hostname):
                     host_found = True
                     break;
                 host_line = fh.readline()
@@ -157,7 +174,7 @@ def append_host(hostname):
             fh.write(HOST_LINE + '\n');
 
         #if we make it here there wasn't a host in the file
-        fh.write('%s    127.0.0.1\n' % hostname)
+        fh.write('127.0.0.1    %s\n' % hostname)
 
         fh.close()
 
@@ -168,7 +185,7 @@ def append_host(hostname):
 
 
 def usage():
-    print('Usage: a2mksite [-v] hostname path [index]')
+    print('Usage: a2mksite [-v] hostname [path] [index]')
 
 if __name__ == '__main__':
     main()
