@@ -88,7 +88,7 @@ def main():
     if verbose: print('Host %s added successfully.' % hostname)
     system('a2ensite %s.conf' % hostname)
 
-    if(path.isfile('/etc/init.d/apache2'):
+    if(path.isfile('/etc/init.d/apache2')):
         system('/etc/init.d/apache2 reload')
     elif(path.isfile('/etc/init.d/httpd')):
         system('/etc/init.d/httpd reload')
